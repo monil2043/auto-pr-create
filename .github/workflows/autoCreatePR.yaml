@@ -1,0 +1,41 @@
+name: Auto Create PRs to Dev and Pre-Prod
+
+on:
+  push:
+    branches:
+      - master  # or 'main' depending on your default branch name
+
+jobs:
+  create-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+
+      - name: Create PR to Dev
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_branch: "main"
+          destination_branch: "dev"
+          pr_title: "Auto-sync: Production → Dev"
+          pr_body: |
+            This PR was automatically created to sync changes from Production to Dev.
+            
+            Please review and merge to keep Dev branch up to date.
+          pr_label: "auto-sync,dev"
+
+      - name: Create PR to Pre-Prod
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_branch: "master"
+          destination_branch: "pre-prod"
+          pr_title: "Auto-sync: Production → Pre-Prod"
+          pr_body: |
+            This PR was automatically created to sync changes from Production to Pre-Prod.
+            
+            Please review and merge to keep Pre-Prod branch up to date.
+          pr_label: "auto-sync,pre-prod"
