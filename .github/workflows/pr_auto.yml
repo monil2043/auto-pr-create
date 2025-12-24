@@ -1,0 +1,55 @@
+name: Auto Create PRs to Dev
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # -------------------------
+      # DEBUG: Show context
+      # -------------------------
+      - name: Debug GitHub Context
+        run: |
+          echo "Actor      : $GITHUB_ACTOR"
+          echo "Ref        : $GITHUB_REF"
+          echo "Ref Name   : $GITHUB_REF_NAME"
+          echo "Repository : $GITHUB_REPOSITORY"
+          git branch -a
+      # -------------------------
+      # Authenticate gh CLI using PAT
+      # -------------------------
+      - name: Authenticate gh CLI with PAT
+        env:
+          GH_TOKEN: ${{ secrets.PR_CREATOR_TOKEN }}
+        run: |
+          echo "Authenticating gh CLI..."
+          gh auth status
+          gh --version
+      # -------------------------
+      # Create PR (NO CHECKS)
+      # -------------------------
+      - name: Create PR to development
+        env:
+          GH_TOKEN: ${{ secrets.PR_CREATOR_TOKEN }}
+          GH_DEBUG: api
+          GH_TRACE: 1
+        run: |
+          echo "Creating PR from '${GITHUB_REF_NAME}' → 'development'"
+          gh pr create \
+            --base dev \
+            --head "${GITHUB_REF_NAME}" \
+            --title "Auto-sync: ${GITHUB_REF_NAME} → dev" \
+            --body "This PR was automatically created by GitHub Actions." \
+            --label "auto-sync,dev" \
+            --repo "$GITHUB_REPOSITORY" \
+          || echo "PR already exists or cannot be created"
